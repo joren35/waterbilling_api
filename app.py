@@ -463,6 +463,19 @@ def update_password():
         return jsonify({'status': 'ok', 'message': res[0][0]})
 
 
+@app.after_request
+def add_cors(resp):
+    resp.headers['Access-Control-Allow-Origin'] = flask.request.headers.get('Origin', '*')
+    resp.headers['Access-Control-Allow-Credentials'] = True
+    resp.headers['Access-Control-Allow-Methods'] = 'POST, OPTIONS, GET, PUT, DELETE'
+    resp.headers['Access-Control-Allow-Headers'] = flask.request.headers.get('Access-Control-Request-Headers', '*')
+    # set low for debugging
+
+    if app.debug:
+        resp.headers["Access-Control-Max-Age"] = '1'
+    return resp
+
+
 if __name__ == '__main__':
     app.debug=False
     port = int(os.environ.get("PORT", 8080))
