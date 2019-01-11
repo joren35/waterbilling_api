@@ -231,16 +231,6 @@ $$
 $$
 language 'sql';
 
-create or replace function get_latestbill_user(in par_id text, out int, out text, out text, out numeric, out int, out text, out bigint, out numeric, out numeric, out text) returns setof record as
-$$
-   select reading, TO_CHAR(date_of_bill, 'MonthDD, YYYY'),TO_CHAR(due_date, 'MonthDD, YYYY'),
-   amount, cubic_meters, status, used_byQuery2(par_id), used_byQuery1(par_id), used_byQuery1(par_id)+amount,
-   case when used_byQuery2(par_id) > 2 then 'Disconnection' else 'Good' end
-   from bills
-   where date_of_bill = (select max(date_of_bill) from bills where b_userid::text = par_id and newly_added = false) and b_userid::text = par_id and newly_added = false
-$$
-language 'sql';
-
 create or replace function used_byQuery1(in par_id text,out numeric) returns numeric as
 $$
 	select COALESCE (sum(amount),0.00)
@@ -258,6 +248,17 @@ $$
 	 where b_userid::text = par_id and newly_added = false
 $$
 language 'sql';
+
+create or replace function get_latestbill_user(in par_id text, out int, out text, out text, out numeric, out int, out text, out bigint, out numeric, out numeric, out text) returns setof record as
+$$
+   select reading, TO_CHAR(date_of_bill, 'MonthDD, YYYY'),TO_CHAR(due_date, 'MonthDD, YYYY'),
+   amount, cubic_meters, status, used_byQuery2(par_id), used_byQuery1(par_id), used_byQuery1(par_id)+amount,
+   case when used_byQuery2(par_id) > 2 then 'Disconnection' else 'Good' end
+   from bills
+   where date_of_bill = (select max(date_of_bill) from bills where b_userid::text = par_id and newly_added = false) and b_userid::text = par_id and newly_added = false
+$$
+language 'sql';
+
 
 
 create or replace function viewpaid(in par_text text, out TEXT, out TEXT,  out text, out INT, out numeric) returns setof record as
@@ -281,9 +282,9 @@ $$
 $$
 language 'sql';
 
-create or replace function send_sms(out text, out numeric, out text) returns setof record as
+create or replace function send_sms(out text, out numeric, out text, out bigint) returns setof record as
 $$
-	select acc_id, mobile_num, sum(amount), TO_CHAR(max(due_date), 'Monthdd, yyyy'),count(case when status like 'Unpaid' then 1 end) from account, bills
+	select mobile_num, sum(amount), TO_CHAR(max(due_date), 'Monthdd, yyyy'),count(case when status like 'Unpaid' then 1 end) from account, bills
 	where (status = 'Unpaid' and mobile_num is not null) and (b_userid = acc_id and newly_added = false)
 	group by acc_id
 $$
